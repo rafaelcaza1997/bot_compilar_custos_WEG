@@ -106,7 +106,18 @@ def get_paths_csv(limite = 20):
     return dict_limitado
 
 
-def create_historico_custos(dict_values):
+def create_historico_custos(dict_values_, intercompany = False):
+
+    dict_values = {}
+    for data in dict_values_:
+        for centro in dict_values_[data]:
+            if intercompany and centro == '0':
+                dict_values[data] = dict_values_[data]
+            if not intercompany and centro != '0':
+                dict_values[data] = dict_values_[data]
+                
+
+
 
     df_hist_last = pd.DataFrame(columns=['procv_material'])
     df_lote_last = pd.DataFrame(columns=['procv_material'])
@@ -123,6 +134,7 @@ def create_historico_custos(dict_values):
 
 
     for data in dict_values:
+        
         data_str =  datetime.strftime(data,"%d/%m/%Y")
 
         vetor_datas.append(data_str)
@@ -135,9 +147,17 @@ def create_historico_custos(dict_values):
         ultima_data = data_str
 
         for centro in dict_values[data]:
+        
+            if intercompany:
+                header = ['None_1','Material', 'Texto breve de material', 'Centro', '    Total Un.', 'Tam.lote cálc.csts.', 'UMAv', ' Ano', 'Per','None_2']
+                df = pd.read_csv(dict_values[data][centro], sep="|",header=5, encoding='latin-1', dtype = str, names = header)
+                df = df.dropna(how = 'all', axis = 1)   
+                df['Centro'] = 0
+                    
+            if not intercompany:
+                df = pd.read_csv(dict_values[data][centro], sep="|",header=0, encoding='latin-1', dtype = str)
 
-            df = pd.read_csv(dict_values[data][centro], sep="|",header=0, encoding='latin-1', dtype = str)
-
+                
             dict_primeira_conv = {}
             for col in df.columns:
                 dict_primeira_conv[col] = col.strip()
@@ -172,6 +192,18 @@ def create_historico_custos(dict_values):
             df_lote_temp = pd.concat([df_lote_temp, df_custos[['procv_material',data_str]]])
 
 
+
+        # if intercompany:
+        #     if centro == '0':
+        #         pass
+        #     else:
+        #         break
+        # if not intercompany:
+        #     if centro != '0':
+        #         pass
+        #     else:
+        #         break
+
         df_historico = pd.merge(df_hist_last, df_historico_temp[['procv_material', data_str]], how = "outer", on = ['procv_material'])
         df_lote = pd.merge(df_lote_last, df_lote_temp[['procv_material', data_str]], how = "outer", on = ['procv_material'])
 
@@ -185,51 +217,66 @@ def create_historico_custos(dict_values):
 
     df_resumo = pd.merge(df_resumo, df_descricao, how = "left", on = ['Material'])
 
-    df_resumo = pd.merge(df_resumo, df_historico[['procv_material', penultima_data, ultima_data]], how = "left", on = ['procv_material'])
+    if penultima_data != None:
+        df_resumo = pd.merge(df_resumo, df_historico[['procv_material', penultima_data, ultima_data]], how = "left", on = ['procv_material'])
 
-    dict_convrt = {
-        penultima_data: "Custo " + penultima_data,
-        ultima_data: "Custo " + ultima_data,
-    }
-
-    df_resumo.rename(columns=dict_convrt, inplace = True)
-
-    # df_resumo = pd.merge(df_resumo, df_descricao, how = "left", on = ['Material'])
-    df_resumo["Reajuste"] = df_resumo[dict_convrt[ultima_data]] - df_resumo[dict_convrt[penultima_data]]
-    df_resumo["Reajuste_%"] = df_resumo["Reajuste"] / df_resumo[dict_convrt[penultima_data]]
-
-
-    df_resumo = pd.merge(df_resumo, df_lote[["procv_material", df_lote.columns[-1]]], how = "left", on = ['procv_material'])
-    df_resumo.rename(columns={df_lote.columns[-1] : 'Tam_lote'}, inplace = True)
-
-
-    # df_resumo = df_resumo[['procv_material', 'Material', 'Descricao', 'Centro', 'UMAv',	dict_convrt[penultima_data], dict_convrt[ultima_data], 'Reajuste', 'Reajuste_%']]
-
-    df_resumo = df_resumo[['procv_material', 'Material', 'Descricao', 'Centro', 'Tam_lote', 'UMAv',	dict_convrt[penultima_data], dict_convrt[ultima_data], 'Reajuste', 'Reajuste_%']]
+        dict_convrt = {
+            penultima_data: "Custo " + penultima_data,
+            ultima_data: "Custo " + ultima_data,
+        }
         
-    dict_convrt = {
-        "Custo " + penultima_data : "custo_antigo",
-        "Custo " + ultima_data : "custo_atual",
-    }
+        df_resumo.rename(columns=dict_convrt, inplace = True)
+        # df_resumo = pd.merge(df_resumo, df_descricao, how = "left", on = ['Material'])
+        df_resumo["Reajuste"] = df_resumo[dict_convrt[ultima_data]] - df_resumo[dict_convrt[penultima_data]]
+        df_resumo["Reajuste_%"] = df_resumo["Reajuste"] / df_resumo[dict_convrt[penultima_data]]
 
-    df_resumo_padronizado = df_resumo.rename(columns=dict_convrt)
+        df_resumo = pd.merge(df_resumo, df_lote[["procv_material", df_lote.columns[-1]]], how = "left", on = ['procv_material'])
+        df_resumo.rename(columns={df_lote.columns[-1] : 'Tam_lote'}, inplace = True)
 
-    df_resumo.sort_values( by = 'Reajuste_%', ascending = False, inplace = True, ignore_index = True)
+        df_resumo = df_resumo[['procv_material', 'Material', 'Descricao', 'Centro', 'Tam_lote', 'UMAv',	dict_convrt[penultima_data], dict_convrt[ultima_data], 'Reajuste', 'Reajuste_%']]
+            
+        dict_convrt = {
+            "Custo " + penultima_data : "custo_antigo",
+            "Custo " + ultima_data : "custo_atual",
+        }
+        df_resumo_padronizado = df_resumo.rename(columns=dict_convrt)
+        df_resumo.sort_values( by = 'Reajuste_%', ascending = False, inplace = True, ignore_index = True)
+        
+    else:
+        df_resumo = pd.merge(df_resumo, df_historico[['procv_material', ultima_data]], how = "left", on = ['procv_material'])
+        dict_convrt = {
+            ultima_data: "Custo " + ultima_data,
+        }
+        df_resumo.rename(columns=dict_convrt, inplace = True)
+        df_resumo = pd.merge(df_resumo, df_lote[["procv_material", df_lote.columns[-1]]], how = "left", on = ['procv_material'])
+        df_resumo.rename(columns={df_lote.columns[-1] : 'Tam_lote'}, inplace = True)
+
+        df_resumo = df_resumo[['procv_material', 'Material', 'Descricao', 'Centro', 'Tam_lote', 'UMAv', dict_convrt[ultima_data]]]
+        dict_convrt = {
+            "Custo " + ultima_data : "custo_atual",
+        }
+        df_resumo_padronizado = df_resumo.rename(columns=dict_convrt)
+        
+
 
     df_qntd = pd.read_excel(path_arquivo_quantidade, header = 3)
 
     df_filtrado_qntd = pd.DataFrame()
 
-    df_filtrado_qntd["Material"] = df_qntd["Material"].apply(lambda x: str(x.replace("#/","")))
-    df_filtrado_qntd["Volume"] = df_qntd["Unnamed: 10"]
+    if len(df_qntd) > 0:
 
-    df_quantidade_total = df_filtrado_qntd.groupby(by = 'Material', as_index = False).sum()
+        df_filtrado_qntd["Material"] = df_qntd["Material"].apply(lambda x: str(x.replace("#/","")))
+        df_filtrado_qntd["Volume"] = df_qntd["Unnamed: 10"]
 
-    df_resumo = df_resumo.merge(df_quantidade_total, how='left', on='Material')
-    # df_resumo.fillna(0, inplace = True)
+        df_quantidade_total = df_filtrado_qntd.groupby(by = 'Material', as_index = False).sum()
 
-    df_parametros = pd.DataFrame(data = {"Custo anterior": ["Custo " + penultima_data], "Custo atual": ["Custo " + ultima_data]})
-
+        df_resumo = df_resumo.merge(df_quantidade_total, how='left', on='Material')
+        # df_resumo.fillna(0, inplace = True)
+    if penultima_data != None:
+        df_parametros = pd.DataFrame(data = {"Custo anterior": ["Custo " + penultima_data], "Custo atual": ["Custo " + ultima_data]})
+    else:
+        df_parametros = pd.DataFrame(data = {"Custo anterior": ["Sem custo anterior"], "Custo atual": ["Custo " + ultima_data]})
+        
 
     def get_df(path, idioma):
         df = pd.read_csv(path, sep="|",header=1, encoding='latin-1', dtype = str)
@@ -263,6 +310,7 @@ def create_historico_custos(dict_values):
     df_historico.reset_index(drop = True, inplace = True)
 
     return df_historico, df_lote, df_resumo, df_resumo_padronizado, df_parametros
+
 
 
 def enviar_email(path_arquivo_custos, destinatarios_email):
@@ -318,7 +366,7 @@ if __name__ == '__main__':
     "path_descricao_ES = "+ path_padrao + "//ES.txt",
     "path_descricao_US = "+ path_padrao + "//EN.txt",
     "[email]",
-    "enviar_email = True",
+    "enviar_email = False",
     "destinatarios = email1@gmail.com;email2@gmail.com",
     "",
     "[formatacao_arquivos_txt]",
@@ -326,6 +374,10 @@ if __name__ == '__main__':
     "centro_1609_sufixo =  ",
     "centro_1607_prefixo = ",
     "centro_1607_sufixo = ",
+    
+    "centro_intercompany_prefixo = ",
+    "centro_intercompany_sufixo = ",
+    
     "formato_data = &d.&m.&Y",
     ]
 
@@ -363,6 +415,9 @@ if __name__ == '__main__':
     centro_1609_sufixo = cfg["formatacao_arquivos_txt"]["centro_1609_sufixo"]
     centro_1607_prefixo = cfg["formatacao_arquivos_txt"]["centro_1607_prefixo"]
     centro_1607_sufixo = cfg["formatacao_arquivos_txt"]["centro_1607_sufixo"]
+    centro_intercompany_prefixo = cfg["formatacao_arquivos_txt"]["centro_intercompany_prefixo"]
+    centro_intercompany_sufixo = cfg["formatacao_arquivos_txt"]["centro_intercompany_sufixo"]
+
 
     centros = {
         "1609":{
@@ -372,6 +427,10 @@ if __name__ == '__main__':
         "1607":{
             "prefixo" : centro_1607_prefixo.strip(),
             "sufixo" : centro_1607_sufixo.strip(),
+        },
+        "0":{
+            "prefixo" : centro_intercompany_prefixo.strip(),
+            "sufixo" : centro_intercompany_sufixo.strip(),
         },
         }
 
@@ -418,7 +477,8 @@ if __name__ == '__main__':
         print("Atualizando arquivos")
 
         dict = get_paths_csv( limite = 20)
-        df_historico, df_lote, df_resumo, df_resumo_padronizado, df_parametros = create_historico_custos(dict)
+        df_historico, df_lote, df_resumo, df_resumo_padronizado, df_parametros = create_historico_custos(dict, intercompany = False)
+        df_historico_intercompany, df_lote_intercompany, df_resumo_intercompany, df_resumo_padronizado_intercompany, df_parametros_intercompany = create_historico_custos(dict, intercompany = True)
 
         col_datas = [str(col) for col in df_historico.columns[-2::]]
 
@@ -427,11 +487,18 @@ if __name__ == '__main__':
         df_lote.to_excel(writer, sheet_name='historico_lote', index = False)
         df_parametros.to_excel(writer, sheet_name='parametros', index = False)
         df_historico.to_excel(writer, sheet_name='historico_custos', index = False)
+        
+        df_resumo_padronizado_intercompany.to_excel(writer, sheet_name='custos_intercompany', index = False)
+        df_lote_intercompany.to_excel(writer, sheet_name='historico_lote_intercompany', index = False)
+        df_parametros_intercompany.to_excel(writer, sheet_name='parametros_intercompany', index = False)
+        df_historico_intercompany.to_excel(writer, sheet_name='historico_custos_intercompany', index = False)
         writer.save()
 
         writer = pd.ExcelWriter(path_analise_custos, engine='xlsxwriter')
         df_resumo.to_excel(writer, sheet_name='custos', index = False)
         df_historico.to_excel(writer, sheet_name='historico_custos', index = False)
+        df_resumo_intercompany.to_excel(writer, sheet_name='custos_intercompany', index = False)
+        df_historico_intercompany.to_excel(writer, sheet_name='historico_custos_intercompany', index = False)
         writer.save()
 
 
