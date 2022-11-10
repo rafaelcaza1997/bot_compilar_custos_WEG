@@ -152,7 +152,7 @@ def create_historico_custos(dict_values_, intercompany = False):
                 header = ['None_1','Material', 'Texto breve de material', 'Centro', '    Total Un.', 'Tam.lote cálc.csts.', 'UMAv', ' Ano', 'Per','None_2']
                 df = pd.read_csv(dict_values[data][centro], sep="|",header=5, encoding='latin-1', dtype = str, names = header)
                 df = df.dropna(how = 'all', axis = 1)   
-                df['Centro'] = 0
+                # df['Centro'] = 0
                     
             if not intercompany:
                 df = pd.read_csv(dict_values[data][centro], sep="|",header=0, encoding='latin-1', dtype = str)
@@ -243,17 +243,25 @@ def create_historico_custos(dict_values_, intercompany = False):
         df_resumo.sort_values( by = 'Reajuste_%', ascending = False, inplace = True, ignore_index = True)
         
     else:
-        df_resumo = pd.merge(df_resumo, df_historico[['procv_material', ultima_data]], how = "left", on = ['procv_material'])
+        df_historico["Sem Custo Anterior"] = 'N/A'
+        df_resumo = pd.merge(df_resumo, df_historico[['procv_material', "Sem Custo Anterior", ultima_data]], how = "left", on = ['procv_material'])
         dict_convrt = {
             ultima_data: "Custo " + ultima_data,
         }
         df_resumo.rename(columns=dict_convrt, inplace = True)
+        
+        df_resumo["Reajuste"] = 'N/A'
+        df_resumo["Reajuste_%"] = 'N/A'
+        
         df_resumo = pd.merge(df_resumo, df_lote[["procv_material", df_lote.columns[-1]]], how = "left", on = ['procv_material'])
         df_resumo.rename(columns={df_lote.columns[-1] : 'Tam_lote'}, inplace = True)
 
-        df_resumo = df_resumo[['procv_material', 'Material', 'Descricao', 'Centro', 'Tam_lote', 'UMAv', dict_convrt[ultima_data]]]
+        # df_resumo = df_resumo[['procv_material', 'Material', 'Descricao', 'Centro', 'Tam_lote', 'UMAv', dict_convrt[ultima_data]]]
+        df_resumo = df_resumo[['procv_material', 'Material', 'Descricao', 'Centro', 'Tam_lote', 'UMAv',	"Sem Custo Anterior" , dict_convrt[ultima_data], 'Reajuste', 'Reajuste_%']]
+        
         dict_convrt = {
             "Custo " + ultima_data : "custo_atual",
+            "Sem Custo Anterior": "custo_antigo"
         }
         df_resumo_padronizado = df_resumo.rename(columns=dict_convrt)
         
