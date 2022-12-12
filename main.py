@@ -148,14 +148,14 @@ def create_historico_custos(dict_values_, intercompany = False):
 
         for centro in dict_values[data]:
         
-            if intercompany:
-                header = ['None_1','Material', 'Texto breve de material', 'Centro', '    Total Un.', 'Tam.lote cálc.csts.', 'UMAv', ' Ano', 'Per','None_2']
-                df = pd.read_csv(dict_values[data][centro], sep="|",header=5, encoding='latin-1', dtype = str, names = header)
-                df = df.dropna(how = 'all', axis = 1)   
-                # df['Centro'] = 0
+            # if intercompany:
+            #     header = ['None_1','Material', 'Texto breve de material', 'Centro', '    Total Un.', 'Tam.lote cálc.csts.', 'UMAv', ' Ano', 'Per','None_2']
+            #     df = pd.read_csv(dict_values[data][centro], sep="|",header=5, encoding='latin-1', dtype = str, names = header)
+            #     df = df.dropna(how = 'all', axis = 1)   
+            #     # df['Centro'] = 0
                     
-            if not intercompany:
-                df = pd.read_csv(dict_values[data][centro], sep="|",header=0, encoding='latin-1', dtype = str)
+            # if not intercompany:
+            df = pd.read_csv(dict_values[data][centro], sep="|",header=0, encoding='latin-1', dtype = str)
 
                 
             dict_primeira_conv = {}
@@ -187,7 +187,7 @@ def create_historico_custos(dict_values_, intercompany = False):
 
             df_historico_temp = pd.concat([df_historico_temp, df_custos[['procv_material',data_str]]])
 
-            df_custos.drop(columns = data_str, index = 1, inplace = True)
+            df_custos.drop(columns = data_str, axis = 1, inplace = True)
             df_custos = df_custos.rename(columns={'Tam_lote': data_str})
             df_lote_temp = pd.concat([df_lote_temp, df_custos[['procv_material',data_str]]])
 
