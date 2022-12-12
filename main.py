@@ -112,9 +112,13 @@ def create_historico_custos(dict_values_, intercompany = False):
     for data in dict_values_:
         for centro in dict_values_[data]:
             if intercompany and centro == '0':
-                dict_values[data] = dict_values_[data]
+                if data not in dict_values.keys():
+                    dict_values[data] = {}
+                dict_values[data][centro] = dict_values_[data][centro]
             if not intercompany and centro != '0':
-                dict_values[data] = dict_values_[data]
+                if data not in dict_values.keys():
+                    dict_values[data] = {}
+                dict_values[data][centro] = dict_values_[data][centro]
                 
 
 
