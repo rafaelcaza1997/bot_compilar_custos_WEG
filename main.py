@@ -431,8 +431,8 @@ if __name__ == '__main__':
     centro_intercompany_prefixo = cfg["formatacao_arquivos_txt"]["centro_intercompany_prefixo"]
     centro_intercompany_sufixo = cfg["formatacao_arquivos_txt"]["centro_intercompany_sufixo"]
     
-    # novo_custo_prefixo = cfg["formatacao_arquivos_txt"]["novo_custo_prefixo"]
-    # novo_custo_sufixo = cfg["formatacao_arquivos_txt"]["novo_custo_sufixo"]
+    novo_custo_prefixo = cfg["formatacao_arquivos_txt"]["novo_custo_prefixo"]
+    novo_custo_sufixo = cfg["formatacao_arquivos_txt"]["novo_custo_sufixo"]
 
 
     centros = {
@@ -448,10 +448,10 @@ if __name__ == '__main__':
             "prefixo" : centro_intercompany_prefixo.strip(),
             "sufixo" : centro_intercompany_sufixo.strip(),
         },
-        # "1":{
-        #     "prefixo" : novo_custo_prefixo.strip(),
-        #     "sufixo" : novo_custo_sufixo.strip(),
-        # },
+        "1":{
+            "prefixo" : novo_custo_prefixo.strip(),
+            "sufixo" : novo_custo_sufixo.strip(),
+        },
         }
 
 
