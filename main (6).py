@@ -430,9 +430,6 @@ if __name__ == '__main__':
     centro_1607_sufixo = cfg["formatacao_arquivos_txt"]["centro_1607_sufixo"]
     centro_intercompany_prefixo = cfg["formatacao_arquivos_txt"]["centro_intercompany_prefixo"]
     centro_intercompany_sufixo = cfg["formatacao_arquivos_txt"]["centro_intercompany_sufixo"]
-    
-    # novo_custo_prefixo = cfg["formatacao_arquivos_txt"]["novo_custo_prefixo"]
-    # novo_custo_sufixo = cfg["formatacao_arquivos_txt"]["novo_custo_sufixo"]
 
 
     centros = {
@@ -448,10 +445,6 @@ if __name__ == '__main__':
             "prefixo" : centro_intercompany_prefixo.strip(),
             "sufixo" : centro_intercompany_sufixo.strip(),
         },
-        # "1":{
-        #     "prefixo" : novo_custo_prefixo.strip(),
-        #     "sufixo" : novo_custo_sufixo.strip(),
-        # },
         }
 
 
@@ -499,9 +492,7 @@ if __name__ == '__main__':
         print("Atualizando arquivos")
 
         dict = get_paths_csv( limite = 20)
-        
         df_historico, df_lote, df_resumo, df_resumo_padronizado, df_parametros = create_historico_custos(dict, intercompany = False)
-        
         df_historico_intercompany, df_lote_intercompany, df_resumo_intercompany, df_resumo_padronizado_intercompany, df_parametros_intercompany = create_historico_custos(dict, intercompany = True)
 
         col_datas = [str(col) for col in df_historico.columns[-2::]]
@@ -516,16 +507,14 @@ if __name__ == '__main__':
         df_lote_intercompany.to_excel(writer, sheet_name='historico_lote_intercompany', index = False)
         df_parametros_intercompany.to_excel(writer, sheet_name='parametros_intercompany', index = False)
         df_historico_intercompany.to_excel(writer, sheet_name='historico_custos_intercompany', index = False)
-        # writer.save()
-        writer.close()
+        writer.save()
 
         writer = pd.ExcelWriter(path_analise_custos, engine='xlsxwriter')
         df_resumo.to_excel(writer, sheet_name='custos', index = False)
         df_historico.to_excel(writer, sheet_name='historico_custos', index = False)
         df_resumo_intercompany.to_excel(writer, sheet_name='custos_intercompany', index = False)
         df_historico_intercompany.to_excel(writer, sheet_name='historico_custos_intercompany', index = False)
-        # writer.save()
-        writer.close()
+        writer.save()
 
 
         # rotina_atualizar_arquivos()
