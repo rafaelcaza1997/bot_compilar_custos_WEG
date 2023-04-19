@@ -7,6 +7,7 @@ import configparser
 import argparse
 import requests
 from datetime import datetime
+import copy
 
 
 cfg = configparser.ConfigParser()
@@ -46,17 +47,30 @@ def ler_arquivos(filename):
 
 
 def verificar_centro(str):
-    for key in centros:
-        if centros[key]["prefixo"] in str:
-            return key
-    return "Erro"
+    
+    # info_custos = {
+    #     'sufixo':''
+    #     }
+    
+    # for custo in custos:
+    #     info_custos[custo] = 
+    #     custo[]
+    
+    # centros =  
+    
+    # for key in centros:
+    #     if centros[key]["prefixo"] in str:
+    #         return key
+    # return "Erro"
+    return ''
 
 
-def converter_data(str, centro):
+def converter_data(str, prefixo, sufixo):
+    
     data = str
-    for value in centros[centro].values():
-        data = data.replace(value,"")
-    data = data.strip()
+    data = data.replace(sufixo,"").replace(prefixo,"").strip()
+
+    
     return datetime.strptime(data, "%d.%m.%Y")
 
 
@@ -74,61 +88,76 @@ def converter_tam_lote(x):
     return x.strip()
 
 
-def get_paths_csv(limite = 20):
+
+
+
+def get_paths_csv(limite = 20, ref_custo = '', ref_centro = ''):
     pathlist = Path(path_pasta_origem).glob('**/*.txt')
     
-    dict_arquivo = {}
+    dict_paths = {}
+
+    lista_paths = []
+
+    sufixo = custos[ref_custo][centro]['sufixo']
+    prefixo = custos[ref_custo][centro]['prefixo']
+
     for path in pathlist:
-
-        centro = verificar_centro(path.name.strip())
-        data = converter_data(path.name.strip(), centro)
-
-        if data not in dict_arquivo.keys():
-            dict_arquivo[data] = {
-            centro:path,
-            }
+        # centro = verificar_centro(path.name.strip())
+        path_name = path.name.strip()
+        
+        if prefixo in path_name and sufixo in path_name:
+            pass
         else:
-            dict_arquivo[data][centro] = path
+            continue
+        
+        data = converter_data(path_name, prefixo, sufixo)
 
+        # if data not in dict_paths.keys():
+        #     dict_paths[data] = path
+        # else:
+        dict_paths[data] = path
+
+
+    # print(dict_paths)
+    
     dict_filtrado = {}
-    for item in sorted(dict_arquivo.items()):
+    for item in sorted(dict_paths.items()):
         dict_filtrado[item[0]] = item[1]
 
     lista_keys = [key for key in dict_filtrado.keys()]
     lista_keys.reverse()
     lista_keys = lista_keys[0:limite]
     lista_keys.reverse()
-
+    print(lista_keys)
+    
     dict_limitado = {}
     for key in lista_keys:
         dict_limitado[key] = dict_filtrado[key]
-
+    
+    
+    # lista_paths = []
+    # for item in sorted(dict_paths.items()):
+    #     print(item[1]['path'])
+    #     lista_paths.append(item[1]['path'])
+        
+    # lista_paths.reverse()
+    
     return dict_limitado
+        # custos[ref_custo][centro]['arquivos'] = lista_paths.reverse()
+        
+        
+
+    # return dict_limitado
 
 
-def create_historico_custos(dict_values_, intercompany = False):
-
-    dict_values = {}
-    for data in dict_values_:
-        for centro in dict_values_[data]:
-            if intercompany and centro == '0':
-                if data not in dict_values.keys():
-                    dict_values[data] = {}
-                dict_values[data][centro] = dict_values_[data][centro]
-            if not intercompany and centro != '0':
-                if data not in dict_values.keys():
-                    dict_values[data] = {}
-                dict_values[data][centro] = dict_values_[data][centro]
-                
-
+def create_historico_custos(ref_custo):
+    
+    # dict_values = custos[ref_custo][ref_centro]['arquivos']
 
 
     df_hist_last = pd.DataFrame(columns=['procv_material'])
     df_lote_last = pd.DataFrame(columns=['procv_material'])
-
     df_resumo_last = pd.DataFrame(columns=['procv_material','Material','Centro','UMAv'])
-
-
     df_descricao = pd.DataFrame(columns=['Material','Descricao'])
 
     ultima_data = None
@@ -136,6 +165,26 @@ def create_historico_custos(dict_values_, intercompany = False):
 
     vetor_datas = []
 
+
+    centros = [centro for centro in custos[ref_custo]]
+    
+    # datas = [data for data in custos[ref_custo][centros[0]]['arquivos']]
+
+    # for centro in custos[ref_custo]:
+    #     for data in custos[ref_custo][centro]['arquivos']:
+    
+    dict_values = {}
+    
+    for data in custos[ref_custo][centros[0]]['arquivos']:
+        dict_values[data] = {}
+        
+        for centro in centros:
+            filepath = custos[ref_custo][centro]['arquivos'][data]
+            dict_values[data][centro] = filepath
+            
+        
+            
+        
 
     for data in dict_values:
         
@@ -152,13 +201,6 @@ def create_historico_custos(dict_values_, intercompany = False):
 
         for centro in dict_values[data]:
         
-            # if intercompany:
-            #     header = ['None_1','Material', 'Texto breve de material', 'Centro', '    Total Un.', 'Tam.lote cálc.csts.', 'UMAv', ' Ano', 'Per','None_2']
-            #     df = pd.read_csv(dict_values[data][centro], sep="|",header=5, encoding='latin-1', dtype = str, names = header)
-            #     df = df.dropna(how = 'all', axis = 1)   
-            #     # df['Centro'] = 0
-                    
-            # if not intercompany:
             df = pd.read_csv(dict_values[data][centro], sep="|",header=0, encoding='latin-1', dtype = str)
 
                 
@@ -197,17 +239,6 @@ def create_historico_custos(dict_values_, intercompany = False):
             df_lote_temp = pd.concat([df_lote_temp, df_custos[['procv_material',data_str]]])
 
 
-
-        # if intercompany:
-        #     if centro == '0':
-        #         pass
-        #     else:
-        #         break
-        # if not intercompany:
-        #     if centro != '0':
-        #         pass
-        #     else:
-        #         break
 
         df_historico = pd.merge(df_hist_last, df_historico_temp[['procv_material', data_str]], how = "outer", on = ['procv_material'])
         df_lote = pd.merge(df_lote_last, df_lote_temp[['procv_material', data_str]], how = "outer", on = ['procv_material'])
@@ -434,25 +465,91 @@ if __name__ == '__main__':
     novo_custo_prefixo = cfg["formatacao_arquivos_txt"]["novo_custo_prefixo"]
     novo_custo_sufixo = cfg["formatacao_arquivos_txt"]["novo_custo_sufixo"]
 
+    
+    
+    # centros = {
+    #     "1609":{
+    #         "prefixo" : ,
+    #         "sufixo" : ,
+    #     },
+    #     "1607":{
+    #         "prefixo" : centro_1607_prefixo.strip(),
+    #         "sufixo" : centro_1607_sufixo.strip(),
+    #     },
+    #     "0":{
+    #         "prefixo" : centro_intercompany_prefixo.strip(),
+    #         "sufixo" : centro_intercompany_sufixo.strip(),
+    #     },
+    #     "1":{
+    #         "prefixo" : novo_custo_prefixo.strip(),
+    #         "sufixo" : novo_custo_sufixo.strip(),
+    #     },
+    #     }
 
-    centros = {
-        "1609":{
-            "sufixo" : centro_1609_sufixo.strip(),
-            "prefixo" : centro_1609_prefixo.strip(),
+
+
+
+    # custos = {
+    #     'geral':[
+    #         {
+    #             'referencia':'1609',
+    #             'prefixo':centro_1609_prefixo.strip(),
+    #             'sufixo':centro_1609_sufixo.strip(),
+    #             'arquivos':[]
+    #         },{
+    #             'referencia':'1607',
+    #             'prefixo':centro_1607_prefixo.strip(),
+    #             'sufixo':centro_1607_sufixo.strip(),
+    #             'arquivos':[]
+    #         }
+    #     ],
+    #     'intercompany':[
+    #         {
+    #             'referencia':'intercompany',
+    #             'prefixo':centro_intercompany_prefixo.strip(),
+    #             'sufixo':centro_intercompany_sufixo.strip(),
+    #             'arquivos':[]
+    #         }
+    #     ],
+    #     'novo':[
+    #         {
+    #             'referencia':'novo',
+    #             'prefixo':novo_custo_prefixo.strip(),
+    #             'sufixo':novo_custo_sufixo.strip(),
+    #             'arquivos':[]
+    #         }
+    #     ],
+    # }
+
+    custos = {
+        'geral':{
+            '1609':{
+                'prefixo':centro_1609_prefixo.strip(),
+                'sufixo':centro_1609_sufixo.strip(),
+                'arquivos':None
+            },
+            '1607':{
+                'referencia':'',
+                'prefixo':centro_1607_prefixo.strip(),
+                'sufixo':centro_1607_sufixo.strip(),
+                'arquivos':None
+            }
         },
-        "1607":{
-            "sufixo" : centro_1607_sufixo.strip(),
-            "prefixo" : centro_1607_prefixo.strip(),
+        'intercompany':{
+            'inter':{
+                'prefixo':centro_intercompany_prefixo.strip(),
+                'sufixo':centro_intercompany_sufixo.strip(),
+                'arquivos':None
+            }
         },
-        "0":{
-            "sufixo" : centro_intercompany_sufixo.strip(),
-            "prefixo" : centro_intercompany_prefixo.strip(),
-        },
-        "1":{
-            "sufixo" : novo_custo_sufixo.strip(),
-            "prefixo" : novo_custo_prefixo.strip(),
-        },
+        'novo_custo':{
+            'novo':{
+                'prefixo':novo_custo_prefixo.strip(),
+                'sufixo':novo_custo_sufixo.strip(),
+                'arquivos':None
+            }
         }
+    }
 
 
 
@@ -492,49 +589,54 @@ if __name__ == '__main__':
     print("Atualizar planilha? ",atualizar_planilha)
 
 
+    # atualizar_planilha = True
+    
     if atualizar_planilha:
         data_hoje = datetime.strftime(datetime.now(),"%d_%m_%Y")
 
         path_analise_custos = path_destino_analise_custos + "//Comparacao_custo_"+data_hoje+".xlsx"
         print("Atualizando arquivos")
-
-        dict = get_paths_csv( limite = 20)
+        for custo in custos:
+            for centro in custos[custo]:
+                custos[custo][centro]['arquivos'] = get_paths_csv( limite = 20, ref_custo = custo, ref_centro = centro)
+                
+        custos_int = copy.deepcopy(custos)
         
-        df_historico, df_lote, df_resumo, df_resumo_padronizado, df_parametros = create_historico_custos(dict, intercompany = False)
+        for custo in custos_int:
+            for centro in custos_int[custo]:
+                if len(custos[custo][centro]['arquivos']) == 0:
+                    custos[custo].pop(centro)
+            if len(custos[custo]) == 0:
+                custos.pop(custo)
+    
+        writer_tabela_custos = pd.ExcelWriter(path_destino_planilha_preco+"//tabela_custos_fuckzao.xlsx", engine='xlsxwriter')
         
-        df_historico_intercompany, df_lote_intercompany, df_resumo_intercompany, df_resumo_padronizado_intercompany, df_parametros_intercompany = create_historico_custos(dict, intercompany = True)
-
-        col_datas = [str(col) for col in df_historico.columns[-2::]]
-
-        writer = pd.ExcelWriter(path_destino_planilha_preco+"//tabela_custos.xlsx", engine='xlsxwriter')
-        df_resumo_padronizado.to_excel(writer, sheet_name='custos', index = False)
-        df_lote.to_excel(writer, sheet_name='historico_lote', index = False)
-        df_parametros.to_excel(writer, sheet_name='parametros', index = False)
-        df_historico.to_excel(writer, sheet_name='historico_custos', index = False)
-        
-        df_resumo_padronizado_intercompany.to_excel(writer, sheet_name='custos_intercompany', index = False)
-        df_lote_intercompany.to_excel(writer, sheet_name='historico_lote_intercompany', index = False)
-        df_parametros_intercompany.to_excel(writer, sheet_name='parametros_intercompany', index = False)
-        df_historico_intercompany.to_excel(writer, sheet_name='historico_custos_intercompany', index = False)
-        # writer.save()
-        writer.close()
-
-        writer = pd.ExcelWriter(path_analise_custos, engine='xlsxwriter')
-        df_resumo.to_excel(writer, sheet_name='custos', index = False)
-        df_historico.to_excel(writer, sheet_name='historico_custos', index = False)
-        df_resumo_intercompany.to_excel(writer, sheet_name='custos_intercompany', index = False)
-        df_historico_intercompany.to_excel(writer, sheet_name='historico_custos_intercompany', index = False)
-        # writer.save()
-        writer.close()
+        writer_analise = pd.ExcelWriter(path_analise_custos, engine='xlsxwriter')
+            
+        for custo in custos:
+            df_historico, df_lote, df_resumo, df_resumo_padronizado, df_parametros = create_historico_custos(custo)
+            
+            df_resumo_padronizado.to_excel(writer_tabela_custos, sheet_name=f'{custo}', index = False)
+            df_lote.to_excel(writer_tabela_custos, sheet_name=f'historico_lote_{custo}', index = False)
+            df_parametros.to_excel(writer_tabela_custos, sheet_name=f'parametros_{custo}', index = False)
+            df_historico.to_excel(writer_tabela_custos, sheet_name=f'historico_{custo}', index = False)
+            
+            df_resumo.to_excel(writer_analise, sheet_name=f'{custo}', index = False)
+            df_historico.to_excel(writer_analise, sheet_name=f'historico_{custo}', index = False)
+            
+        writer_tabela_custos.close()
+        writer_analise.close()
+            
+    
 
 
-        # rotina_atualizar_arquivos()
+            # rotina_atualizar_arquivos()
         if gatilho_enviar_email:
-            enviar_email(path_analise_custos, destinatarios_email)
-    else:
-        print("Arquivos já atualizados")
+                enviar_email(path_analise_custos, destinatarios_email)
+        else:
+            print("Arquivos já atualizados")
 
-    with open(path_arquivos_lidos, 'w') as f:
-        for path in arquivos_antigos:
-            f.write(path+"\n")
+        with open(path_arquivos_lidos, 'w') as f:
+            for path in arquivos_antigos:
+                f.write(path+"\n")
 
