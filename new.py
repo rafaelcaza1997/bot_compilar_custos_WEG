@@ -609,7 +609,7 @@ if __name__ == '__main__':
             if len(custos[custo]) == 0:
                 custos.pop(custo)
     
-        writer_tabela_custos = pd.ExcelWriter(path_destino_planilha_preco+"//tabela_custos_fuckzao.xlsx", engine='xlsxwriter')
+        writer_tabela_custos = pd.ExcelWriter(path_destino_planilha_preco+"//tabela_custos.xlsx", engine='xlsxwriter')
         
         writer_analise = pd.ExcelWriter(path_analise_custos, engine='xlsxwriter')
             
