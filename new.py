@@ -629,14 +629,14 @@ if __name__ == '__main__':
             
     
 
-
-            # rotina_atualizar_arquivos()
-        if gatilho_enviar_email:
-                enviar_email(path_analise_custos, destinatarios_email)
-        else:
-            print("Arquivos já atualizados")
-
         with open(path_arquivos_lidos, 'w') as f:
             for path in arquivos_antigos:
                 f.write(path+"\n")
+
+        if gatilho_enviar_email:
+            enviar_email(path_analise_custos, destinatarios_email)
+            
+    else:
+        print("Arquivos já atualizados")
+
 
